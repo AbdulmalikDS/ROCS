@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🤗 MINER: Multi-crop INference-time Enhancement for Rare-Object Retrieval with Frozen Dual Encoders
+# <img src="assets/miner.png" height="34" align="center"> MINER: Multi-crop INference-time Enhancement for Rare-Object Retrieval with Frozen Dual Encoders
 
 
 [Paper](#) | [Dataset](https://huggingface.co/datasets/AbdulmalekDS/ROCS)
