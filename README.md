@@ -50,7 +50,9 @@ needs `images` entries with `id` and `file_name`, and `annotations` entries with
 
 ## Results
 
-R@1, reported as ROCS-COCO / ROCS-Flickr30K. `evaluate.py` prints these three rows, so they double as the targets to check a run against.
+R@1, reported as ROCS-COCO / ROCS-Flickr30K. `evaluate.py` prints these three rows.
+Every value here was reproduced by `./reproduce.sh`, matching the paper to two decimals
+on all six backbone and split combinations.
 
 | Backbone | Global | Global + CSLS | MINER |
 |---|---|---|---|
