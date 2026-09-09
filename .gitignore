@@ -4,6 +4,6 @@ __pycache__/
 .venv/
 .env
 *.egg-info/
-appendix/third_party/
+appendix/saliency/third_party/
 *.log
 *.so

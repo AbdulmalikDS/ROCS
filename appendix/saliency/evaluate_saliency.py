@@ -4,9 +4,9 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from appendix.crops import saliency_boxes
+from appendix.saliency.crops import saliency_boxes
 from evaluate import load_queries, load_split
 from miner.encoder import MODELS, Encoder
 from miner.retrieval import recall_at_k, score
@@ -16,12 +16,12 @@ SOURCES = ("maskclip", "dinov3", "clip-surgery")
 
 def build_extractor(source, device):
     if source == "maskclip":
-        from appendix.maskclip_saliency import MaskCLIPSaliencyExtractor
+        from appendix.saliency.maskclip_saliency import MaskCLIPSaliencyExtractor
         return MaskCLIPSaliencyExtractor(device=device)
     if source == "dinov3":
-        from appendix.dinov3_saliency import DINOv3SaliencyExtractor
+        from appendix.saliency.dinov3_saliency import DINOv3SaliencyExtractor
         return DINOv3SaliencyExtractor(device=device)
-    from appendix.clip_surgery_saliency import CLIPSurgerySaliencyExtractor
+    from appendix.saliency.clip_surgery_saliency import CLIPSurgerySaliencyExtractor
     return CLIPSurgerySaliencyExtractor(device=device)
 
 

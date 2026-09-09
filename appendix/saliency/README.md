@@ -8,15 +8,15 @@ itself never uses.
 ## Install
 
 ```bash
-pip install -r appendix/requirements.txt
+pip install -r appendix/saliency/requirements.txt
 ```
 
 DINOv3 and CLIP-Surgery also need their upstream repositories, which are not
 vendored here:
 
 ```bash
-git clone https://github.com/facebookresearch/dinov3 appendix/third_party/dinov3
-git clone https://github.com/xmed-lab/CLIP_Surgery appendix/third_party/CLIP_Surgery
+git clone https://github.com/facebookresearch/dinov3 appendix/saliency/third_party/dinov3
+git clone https://github.com/xmed-lab/CLIP_Surgery appendix/saliency/third_party/CLIP_Surgery
 ```
 
 MaskCLIP needs no clone; it reads dense features from the CLIP checkpoint directly.
@@ -24,7 +24,7 @@ MaskCLIP needs no clone; it reads dense features from the CLIP checkpoint direct
 ## Run
 
 ```bash
-python appendix/evaluate_saliency.py --source maskclip --split coco
+python appendix/saliency/evaluate_saliency.py --source maskclip --split coco
 ```
 
 `--source` takes `maskclip`, `dinov3`, or `clip-surgery`. Every other flag matches
