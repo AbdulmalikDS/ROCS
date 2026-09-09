@@ -49,6 +49,27 @@ except ImportError:
     HAS_GPU = False
 
 
+CUDA = HERE / "libcsls_cuda.so"
+
+
+def timed_cuda(sim, repeats=3):
+    """The hand-written kernel, timed on a resident matrix like timed_gpu."""
+    lib = ctypes.CDLL(str(CUDA))
+    lib.csls_cuda.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+    rows, cols = sim.shape
+    work = torch.from_numpy(sim).cuda()
+    best, result = float("inf"), None
+    for _ in range(repeats):
+        work.copy_(torch.from_numpy(sim).cuda())
+        torch.cuda.synchronize()
+        start = time.perf_counter()
+        lib.csls_cuda(ctypes.c_void_p(work.data_ptr()), rows, cols, 10)
+        torch.cuda.synchronize()
+        best = min(best, time.perf_counter() - start)
+        result = work
+    return best, result.cpu().numpy()
+
+
 def timed_gpu(sim, repeats=3):
     """Time with the matrix already on the device, as it is in a real pipeline."""
     resident = torch.from_numpy(sim).cuda()
@@ -102,7 +123,7 @@ def main():
         return
     rng = np.random.default_rng(0)
     julia = julia_times()
-    print(f"{'queries x gallery':>22} {'numpy':>9} {'c++':>9} {'rust':>9} {'julia':>9} {'gpu':>9}  max diff")
+    print(f"{'queries x gallery':>22} {'numpy':>9} {'c++':>9} {'rust':>9} {'julia':>9} {'torch':>9} {'cuda':>9}  max diff")
     for gallery in (2_000, 8_000, 32_000):
         queries = 8_231                       # the ROCS-COCO query count
         sim = rng.random((queries, gallery), dtype=np.float32)
@@ -118,12 +139,13 @@ def main():
             columns.append(f"{seconds:8.3f}s")
         assert diff < 1e-4, f"results diverged by {diff}"
         columns.append(f"{julia[gallery]:8.3f}s" if gallery in julia else "        -")
-        if HAS_GPU:
-            gpu_time, actual = timed_gpu(sim)
+        for runner, available in ((timed_gpu, HAS_GPU), (timed_cuda, HAS_GPU and CUDA.exists())):
+            if not available:
+                columns.append("        -")
+                continue
+            seconds, actual = runner(sim)
             diff = max(diff, float(np.abs(expected - actual).max()))
-            columns.append(f"{gpu_time:8.4f}s")
-        else:
-            columns.append("        -")
+            columns.append(f"{seconds:8.4f}s")
         print(f"{queries:>9,} x {gallery:<9,}{numpy_time:8.3f}s " + " ".join(columns) + f"  {diff:.2e}")
 
 
