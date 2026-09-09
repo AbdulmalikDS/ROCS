@@ -4,6 +4,7 @@ Same formula either way; this only asks how each scales. Build first:
 
     g++ -O3 -march=native -fopenmp -shared -fPIC csls.cpp -o libcsls.so
 """
+import argparse
 import ctypes
 import shutil
 import subprocess
@@ -16,15 +17,29 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from miner.retrieval import csls as csls_numpy
 
-LIB = ctypes.CDLL(str(Path(__file__).resolve().parent / "libcsls.so"))
-LIB.csls.argtypes = [np.ctypeslib.ndpointer(np.float32, flags="C_CONTIGUOUS"),
-                     ctypes.c_int, ctypes.c_int, ctypes.c_int]
+HERE = Path(__file__).resolve().parent
+SIGNATURE = [np.ctypeslib.ndpointer(np.float32, flags="C_CONTIGUOUS"),
+             ctypes.c_int, ctypes.c_int, ctypes.c_int]
 
 
-def csls_cpp(sim, k=10):
-    out = np.ascontiguousarray(sim, dtype=np.float32)
-    LIB.csls(out, out.shape[0], out.shape[1], k)
-    return out
+def load(name):
+    """Bind a compiled csls(), or None if that library was never built."""
+    path = HERE / name
+    if not path.exists():
+        return None
+    lib = ctypes.CDLL(str(path))
+    lib.csls.argtypes = SIGNATURE
+
+    def call(sim, k=10):
+        out = np.ascontiguousarray(sim, dtype=np.float32)
+        lib.csls(out, out.shape[0], out.shape[1], k)
+        return out
+
+    return call
+
+
+csls_cpp = load("libcsls.so")
+csls_rust = load("libcsls_rs.so")
 
 
 def timed(fn, sim, repeats=3):
@@ -48,18 +63,41 @@ def julia_times():
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--matrix", type=Path,
+                        help="a saved .npy similarity matrix; random values otherwise")
+    args = parser.parse_args()
+    if args.matrix:
+        sim = np.load(args.matrix).astype(np.float32)
+        print(f"{args.matrix.name}: {sim.shape[0]:,} queries x {sim.shape[1]:,} images")
+        numpy_time, expected = timed(csls_numpy, sim)
+        row = [f"{numpy_time:8.3f}s"]
+        for fn in (csls_cpp, csls_rust):
+            seconds, actual = timed(fn, sim) if fn else (float("nan"), expected)
+            row.append(f"{seconds:8.3f}s")
+            assert np.abs(expected - actual).max() < 1e-4
+        print(f"{'numpy':>9} {'c++':>9} {'rust':>9}")
+        print(" ".join(row))
+        return
     rng = np.random.default_rng(0)
     julia = julia_times()
-    print(f"{'queries x gallery':>22} {'numpy':>9} {'c++':>9} {'julia':>9}  max diff")
+    print(f"{'queries x gallery':>22} {'numpy':>9} {'c++':>9} {'rust':>9} {'julia':>9}  max diff")
     for gallery in (2_000, 8_000, 32_000):
         queries = 8_231                       # the ROCS-COCO query count
         sim = rng.random((queries, gallery), dtype=np.float32)
         numpy_time, expected = timed(csls_numpy, sim)
-        cpp_time, actual = timed(csls_cpp, sim)
-        diff = float(np.abs(expected - actual).max())
+        diff = 0.0
+        columns = []
+        for fn in (csls_cpp, csls_rust):
+            if fn is None:
+                columns.append("        -")
+                continue
+            seconds, actual = timed(fn, sim)
+            diff = max(diff, float(np.abs(expected - actual).max()))
+            columns.append(f"{seconds:8.3f}s")
         assert diff < 1e-4, f"results diverged by {diff}"
-        shown = f"{julia[gallery]:8.3f}s" if gallery in julia else "        -"
-        print(f"{queries:>9,} x {gallery:<9,}{numpy_time:8.3f}s {cpp_time:8.3f}s {shown}  {diff:.2e}")
+        columns.append(f"{julia[gallery]:8.3f}s" if gallery in julia else "        -")
+        print(f"{queries:>9,} x {gallery:<9,}{numpy_time:8.3f}s " + " ".join(columns) + f"  {diff:.2e}")
 
 
 if __name__ == "__main__":
