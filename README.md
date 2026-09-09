@@ -2,10 +2,6 @@
 
 # MINER: Multi-crop INference-time Enhancement for Rare-Object Retrieval with Frozen Dual Encoders
 
-Abdulmalik Alquwayfili\*, Faisal AlMeshal, Jumanah Almajnouni, Huda Abdulhadi Alamri, Muhammad Kamran J Khan
-
-\*Corresponding author<br>
-Saudi Data and Artificial Intelligence Authority (SDAIA)
 
 [Paper](#) | [Dataset](https://huggingface.co/datasets/AbdulmalekDS/ROCS)
 
