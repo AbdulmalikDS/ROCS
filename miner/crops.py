@@ -2,11 +2,11 @@ import random
 
 
 def fixed5_boxes(w, h, r=0.6, n=5):
-    cw, ch = max(1, int(r * w)), max(1, int(r * h))
+    s = max(1, int(r * min(w, h)))
     cx, cy = w // 2, h // 2
     return [
-        (cx - cw // 2, cy - ch // 2, cx - cw // 2 + cw, cy - ch // 2 + ch),
-        (0, 0, cw, ch), (w - cw, 0, w, ch), (0, h - ch, cw, h), (w - cw, h - ch, w, h),
+        (cx - s // 2, cy - s // 2, cx - s // 2 + s, cy - s // 2 + s),
+        (0, 0, s, s), (w - s, 0, w, s), (0, h - s, s, h), (w - s, h - s, w, h),
     ][:n]
 
 
