@@ -35,16 +35,17 @@ class Encoder:
         self.image_size = (size, size) if isinstance(size, int) else tuple(size)
 
     @torch.inference_mode()
-    def images(self, sources, batch_size=4, cropper=fixed5_boxes):
+    def images(self, sources, batch_size=4, cropper=None):
         if not len(sources) or batch_size < 1:
             raise ValueError("Provide images and a positive batch size.")
+        cropper = cropper or (lambda image: fixed5_boxes(*image.size))
         batches = []
         for start in range(0, len(sources), batch_size):
             views = []
             for index in range(start, min(start + batch_size, len(sources))):
                 image = _open(sources[index])
                 views.append(self.preprocess(image))
-                boxes = cropper(*image.size)
+                boxes = cropper(image)
                 for box in boxes:
                     crop = image.crop(box).resize(self.image_size, Image.Resampling.BICUBIC)
                     views.append(self.preprocess(crop))

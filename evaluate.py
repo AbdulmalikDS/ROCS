@@ -83,11 +83,12 @@ def main():
         parser.error("crop-ratio must be in (0, 1]; region count and grid size must be positive")
     if args.crops == "fixed" and args.n_regions > 5:
         parser.error("fixed crops support at most five regions")
-    cropper = {
+    boxes = {
         "fixed": partial(fixed5_boxes, r=args.crop_ratio, n=args.n_regions),
         "grid": partial(grid_boxes, n=args.grid_size),
         "random": partial(random_boxes, n=args.n_regions, rng=Random(args.seed)),
     }[args.crops]
+    cropper = lambda image: boxes(*image.size)
     if args.annotations:
         sources, queries, targets = load_queries(args.annotations, args.images_dir, args.limit)
     else:
