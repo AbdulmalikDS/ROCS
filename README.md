@@ -13,10 +13,9 @@ MINER improves text-to-image retrieval with a frozen encoder. It encodes the ful
 
 ROCS is the benchmark it is evaluated on: cluttered COCO and Flickr30K scenes re-captioned so each query names one small, rare object.
 
-`appendix/` holds what the paper reports but the method does not need.
-[`saliency/`](appendix/saliency) reruns Table 4, swapping the source that places
-a crop, and [`optimization/`](appendix/optimization) writes CSLS six ways, numpy,
-C++, Rust, Julia, torch and CUDA, timed against a growing gallery.
+[`appendix/saliency/`](appendix/saliency) reruns Table 4 with different saliency
+sources. [`appendix/optimization/`](appendix/optimization) implements CSLS in
+numpy, C++, Rust, Julia, torch and CUDA, and times them.
 
 ## Run
 
@@ -59,15 +58,4 @@ R@1, reported as ROCS-COCO / ROCS-Flickr30K. `evaluate.py` prints these three ro
 | SigLIP So/14 | 45.41 / 46.18 | 48.75 / 50.05 | 50.59 / 52.15 |
 | SigLIP 2 So/16 | 47.08 / 48.00 | 50.29 / 52.28 | 52.36 / 53.84 |
 
-## Built on
-
-- [OpenCLIP](https://github.com/mlfoundations/open_clip) for the frozen encoders:
-  [CLIP](https://arxiv.org/abs/2103.00020), [SigLIP](https://arxiv.org/abs/2303.15343)
-  and [SigLIP 2](https://arxiv.org/abs/2502.14786).
-- [CSLS](https://arxiv.org/abs/1710.04087) for the hubness correction, as
-  implemented in [MUSE](https://github.com/facebookresearch/MUSE).
-- ROCS was built with [SAM 3](https://arxiv.org/abs/2511.16719) for segmentation
-  and [Qwen3-VL](https://arxiv.org/abs/2511.21631) for captioning.
-- The appendix compares saliency from [MaskCLIP](https://arxiv.org/abs/2112.01071),
-  [DINOv3](https://arxiv.org/abs/2508.10104) and
-  [CLIP Surgery](https://arxiv.org/abs/2304.05653).
+Encoders are loaded through [OpenCLIP](https://github.com/mlfoundations/open_clip).
