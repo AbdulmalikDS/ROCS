@@ -10,14 +10,14 @@ Use Python 3.10 or newer and install PyTorch for your hardware, then:
 
 ```bash
 pip install -r requirements.txt
-python evaluate.py --model siglip2 \
-  --annotations /path/to/rocs_coco.json \
-  --images-dir /path/to/coco/val2014
+python evaluate.py --model siglip2 --split coco
 ```
+
+Images and captions are pulled from [the ROCS dataset](https://huggingface.co/datasets/AbdulmalekDS/ROCS) on first run. `--split` takes `coco` or `flickr30k`. To score your own COCO-format file instead, pass `--annotations` and `--images-dir` together.
 
 Supported models: `clip-large`, `siglip-so400m`, and `siglip2`. Add `--limit 20 --batch-size 2` for a small check. Model weights download on first use.
 
-Provide a ROCS caption JSON and its source images. The JSON contains `images` entries with `id` and `file_name`, and `annotations` entries with `caption` and `id` (or COCO-style `image_id`). Images and annotations are not bundled.
+A local file needs `images` entries with `id` and `file_name`, and `annotations` entries with `caption` and `id` (or COCO-style `image_id`).
 
 The command reports R@1, R@5, and R@10 for global retrieval, global retrieval with CSLS, and MINER. `--alpha` controls crop weight (default `0.4`); `--k` controls CSLS neighbors (default `10`, or `0` to disable). CSLS uses the evaluation query batch; this is the batch benchmark protocol.
 

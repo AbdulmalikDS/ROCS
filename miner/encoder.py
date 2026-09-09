@@ -13,6 +13,13 @@ MODELS = {
 }
 
 
+def _open(source):
+    if isinstance(source, Image.Image):
+        return source.convert("RGB")
+    with Image.open(source) as handle:
+        return handle.convert("RGB")
+
+
 class Encoder:
     def __init__(self, name="siglip2", device=None):
         import open_clip
@@ -28,15 +35,14 @@ class Encoder:
         self.image_size = (size, size) if isinstance(size, int) else tuple(size)
 
     @torch.inference_mode()
-    def images(self, paths: list[Path], batch_size=4, cropper=fixed5_boxes):
-        if not paths or batch_size < 1:
+    def images(self, sources, batch_size=4, cropper=fixed5_boxes):
+        if not len(sources) or batch_size < 1:
             raise ValueError("Provide images and a positive batch size.")
         batches = []
-        for start in range(0, len(paths), batch_size):
+        for start in range(0, len(sources), batch_size):
             views = []
-            for path in paths[start:start + batch_size]:
-                with Image.open(path) as source:
-                    image = source.convert("RGB")
+            for index in range(start, min(start + batch_size, len(sources))):
+                image = _open(sources[index])
                 views.append(self.preprocess(image))
                 boxes = cropper(*image.size)
                 for box in boxes:

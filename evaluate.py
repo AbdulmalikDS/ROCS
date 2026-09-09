@@ -11,6 +11,34 @@ from miner.encoder import MODELS, Encoder
 from miner.retrieval import recall_at_k, score
 
 
+class _Rows:
+    """Lazy image access so a whole split is not decoded into memory."""
+
+    def __init__(self, split):
+        self.split = split
+
+    def __len__(self):
+        return len(self.split)
+
+    def __getitem__(self, index):
+        return self.split[index]["image"]
+
+
+def load_split(dataset, config, limit=None):
+    from datasets import load_dataset
+
+    split = load_dataset(dataset, config, split="test")
+    if limit:
+        split = split.select(range(min(limit, len(split))))
+    queries, targets = [], []
+    for index, captions in enumerate(split["captions"]):
+        queries.extend(captions)
+        targets.extend([index] * len(captions))
+    if not len(split) or not queries:
+        raise ValueError("The selected split has no images or queries.")
+    return _Rows(split), queries, np.asarray(targets)
+
+
 def load_queries(annotations, images_dir, limit=None):
     data = json.loads(Path(annotations).read_text())
     images = data["images"][:limit]
@@ -29,8 +57,10 @@ def load_queries(annotations, images_dir, limit=None):
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate global retrieval and MINER on ROCS.")
-    parser.add_argument("--annotations", type=Path, required=True)
-    parser.add_argument("--images-dir", type=Path, required=True)
+    parser.add_argument("--split", choices=["coco", "flickr30k"], default="coco")
+    parser.add_argument("--dataset", default="AbdulmalekDS/ROCS")
+    parser.add_argument("--annotations", type=Path)
+    parser.add_argument("--images-dir", type=Path)
     parser.add_argument("--model", choices=MODELS, default="siglip2")
     parser.add_argument("--device", default=None)
     parser.add_argument("--batch-size", type=int, default=4)
@@ -43,6 +73,8 @@ def main():
     parser.add_argument("--grid-size", type=int, default=3)
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
+    if bool(args.annotations) != bool(args.images_dir):
+        parser.error("pass --annotations and --images-dir together, or neither")
     if args.batch_size < 1 or (args.limit is not None and args.limit < 1):
         parser.error("batch-size and limit must be positive")
     if not 0 <= args.alpha <= 1 or args.k < 0:
@@ -56,10 +88,13 @@ def main():
         "grid": partial(grid_boxes, n=args.grid_size),
         "random": partial(random_boxes, n=args.n_regions, rng=Random(args.seed)),
     }[args.crops]
-    paths, queries, targets = load_queries(args.annotations, args.images_dir, args.limit)
-    print(f"Encoding {len(paths)} images and {len(queries)} queries...", flush=True)
+    if args.annotations:
+        sources, queries, targets = load_queries(args.annotations, args.images_dir, args.limit)
+    else:
+        sources, queries, targets = load_split(args.dataset, args.split, args.limit)
+    print(f"Encoding {len(sources)} images and {len(queries)} queries...", flush=True)
     encoder = Encoder(args.model, args.device)
-    global_features, crops = encoder.images(paths, args.batch_size, cropper=cropper)
+    global_features, crops = encoder.images(sources, args.batch_size, cropper=cropper)
     texts = encoder.texts(queries)
     runs = [("Global", None, 0)]
     if args.k:

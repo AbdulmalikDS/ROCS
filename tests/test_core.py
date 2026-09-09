@@ -11,7 +11,7 @@ import numpy as np
 import torch
 from PIL import Image
 
-from evaluate import load_queries, main
+from evaluate import load_queries, load_split, main
 from miner.crops import fixed5_boxes, grid_boxes, random_boxes
 from miner.encoder import Encoder
 from miner.retrieval import csls, recall_at_k, score
@@ -58,6 +58,24 @@ class RetrievalTests(unittest.TestCase):
             score(np.eye(2), np.eye(2), np.ones((1, 5, 2)))
         with self.assertRaises(ValueError):
             score(np.eye(2), np.eye(2), alpha=2)
+
+    def test_split_flattens_captions_and_reads_images_lazily(self):
+        rows = [{'image': 'first', 'captions': ['a', 'b']}, {'image': 'second', 'captions': ['c']}]
+
+        class Split(list):
+            def select(self, indices):
+                return Split(self[i] for i in indices)
+
+            def __getitem__(self, key):
+                if key == 'captions':
+                    return [row['captions'] for row in self]
+                return list.__getitem__(self, key)
+
+        with patch('datasets.load_dataset', return_value=Split(rows)):
+            sources, queries, targets = load_split('repo', 'coco')
+            self.assertEqual((queries, targets.tolist()), (['a', 'b', 'c'], [0, 0, 1]))
+            self.assertEqual((len(sources), sources[1]), (2, 'second'))
+            self.assertEqual(len(load_split('repo', 'coco', limit=1)[1]), 2)
 
     def test_cli_encodes_all_views_and_reports_metrics(self):
         with tempfile.TemporaryDirectory() as folder:
