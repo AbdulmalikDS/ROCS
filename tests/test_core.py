@@ -18,12 +18,12 @@ from miner.retrieval import csls, recall_at_k, score
 
 
 class RetrievalTests(unittest.TestCase):
-    def test_square_crops_on_landscape_and_portrait_images(self):
+    def test_crops_keep_aspect_and_stay_inside_the_image(self):
         self.assertEqual(fixed5_boxes(640, 480), [
-            (176, 96, 464, 384), (0, 0, 288, 288), (352, 0, 640, 288),
-            (0, 192, 288, 480), (352, 192, 640, 480)])
+            (0, 0, 384, 288), (256, 0, 640, 288), (0, 192, 384, 480),
+            (256, 192, 640, 480), (128, 96, 512, 384)])
         for x1, y1, x2, y2 in fixed5_boxes(301, 507):
-            self.assertEqual(x2 - x1, y2 - y1)
+            self.assertEqual((x2 - x1, y2 - y1), (180, 304))
             self.assertTrue(0 <= x1 < x2 <= 301 and 0 <= y1 < y2 <= 507)
 
     def test_grid_and_random_crop_baselines(self):

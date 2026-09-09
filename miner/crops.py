@@ -2,12 +2,13 @@ import random
 
 
 def fixed5_boxes(w, h, r=0.6, n=5):
-    s = max(1, int(r * min(w, h)))
-    cx, cy = w // 2, h // 2
-    return [
-        (cx - s // 2, cy - s // 2, cx - s // 2 + s, cy - s // 2 + s),
-        (0, 0, s, s), (w - s, 0, w, s), (0, h - s, s, h), (w - s, h - s, w, h),
-    ][:n]
+    # Each side scales independently, so a crop keeps the image's aspect ratio
+    # and covers r^2 of the area. Corners first, centre last.
+    cw, ch = max(1, int(r * w)), max(1, int(r * h))
+    return [(x, y, x + cw, y + ch) for x, y in (
+        (0, 0), (w - cw, 0), (0, h - ch), (w - cw, h - ch),
+        ((w - cw) // 2, (h - ch) // 2),
+    )][:n]
 
 
 def grid_boxes(w, h, n=3):
