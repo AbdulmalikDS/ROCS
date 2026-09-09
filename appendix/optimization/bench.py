@@ -41,6 +41,27 @@ def load(name):
 csls_cpp = load("libcsls.so")
 csls_rust = load("libcsls_rs.so")
 
+try:                                    # optional: only if torch sees a GPU
+    import torch
+    from csls_gpu import csls_gpu
+    HAS_GPU = torch.cuda.is_available()
+except ImportError:
+    HAS_GPU = False
+
+
+def timed_gpu(sim, repeats=3):
+    """Time with the matrix already on the device, as it is in a real pipeline."""
+    resident = torch.from_numpy(sim).cuda()
+    csls_gpu(resident)
+    torch.cuda.synchronize()
+    best = float("inf")
+    for _ in range(repeats):
+        start = time.perf_counter()
+        result = csls_gpu(resident)
+        torch.cuda.synchronize()
+        best = min(best, time.perf_counter() - start)
+    return best, result.cpu().numpy()
+
 
 def timed(fn, sim, repeats=3):
     best = float("inf")
@@ -81,7 +102,7 @@ def main():
         return
     rng = np.random.default_rng(0)
     julia = julia_times()
-    print(f"{'queries x gallery':>22} {'numpy':>9} {'c++':>9} {'rust':>9} {'julia':>9}  max diff")
+    print(f"{'queries x gallery':>22} {'numpy':>9} {'c++':>9} {'rust':>9} {'julia':>9} {'gpu':>9}  max diff")
     for gallery in (2_000, 8_000, 32_000):
         queries = 8_231                       # the ROCS-COCO query count
         sim = rng.random((queries, gallery), dtype=np.float32)
@@ -97,6 +118,12 @@ def main():
             columns.append(f"{seconds:8.3f}s")
         assert diff < 1e-4, f"results diverged by {diff}"
         columns.append(f"{julia[gallery]:8.3f}s" if gallery in julia else "        -")
+        if HAS_GPU:
+            gpu_time, actual = timed_gpu(sim)
+            diff = max(diff, float(np.abs(expected - actual).max()))
+            columns.append(f"{gpu_time:8.4f}s")
+        else:
+            columns.append("        -")
         print(f"{queries:>9,} x {gallery:<9,}{numpy_time:8.3f}s " + " ".join(columns) + f"  {diff:.2e}")
 
 
