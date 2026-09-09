@@ -1,18 +1,13 @@
 # CSLS at gallery scale
 
-`miner/retrieval.py` computes CSLS in numpy, which is fine for the benchmark: on
-ROCS-COCO the matrix is 8,231 x 3,248 and rescoring takes about half a second,
-against 25 minutes to encode the images. Nothing here changes that default.
-
-The question this folder answers is what happens when the gallery is not 3,248
-images. CSLS costs O(rows x cols) per side, and numpy pays it by materialising a
-partitioned copy of the whole matrix once per axis. The two kernels here keep the
-k best in a bounded heap instead, so the matrix is read twice and never copied.
+`miner/retrieval.py` computes CSLS in numpy. On ROCS-COCO that is an
+8,231 x 3,248 matrix and about half a second, against 25 minutes to encode the
+images, so the default stays as it is. This folder measures what happens when
+the gallery is larger.
 
 ## Results
 
-Same formula, same inputs, 8,231 queries against a growing gallery, k=10,
-32 threads. Times are the best of three.
+8,231 queries against a growing gallery, k=10, 32 threads, best of three.
 
 | gallery | numpy | C++ | Rust | Julia | GPU |
 |---|---|---|---|---|---|
@@ -20,25 +15,24 @@ Same formula, same inputs, 8,231 queries against a growing gallery, k=10,
 | 8,000 | 1.766 s | 0.103 s | 0.140 s | 0.092 s | 0.0157 s |
 | 32,000 | 7.370 s | 0.396 s | 0.496 s | 0.381 s | 0.0571 s |
 
-numpy is CPU-only, so it is the baseline rather than a rival to the GPU column.
-GPU times are measured with the matrix already resident on the device, which is
-the real case: the similarity matrix is produced there by the query-image
-product and never leaves. Starting from host memory instead adds a 1 GB copy
-over PCIe and the totals become 0.014 s, 0.050 s and 0.196 s, so at this size the
-transfer costs more than the work.
+All within 5e-7 of the numpy result. numpy is CPU-only and serves as the
+baseline. GPU times have the matrix already resident, which is the real case
+since it is produced there; from host memory the totals are 0.014 s, 0.050 s and
+0.196 s.
 
-All three stay within 5e-7 of the numpy result. Rust and C++ land on each other,
-which is what the same algorithm at the same optimisation level should do. Julia
-is ahead because its arrays are column-major, so the gallery pass, the one that
-dominates, walks contiguous memory.
+Single-threaded at 32,000: numpy 7.68 s, C++ 0.96 s, Julia 2.86 s. The bounded
+heap accounts for ~8x, threads for ~2x more.
 
-On the CPU side, two things account for the gap, and they split unevenly. Single-threaded at
-32,000 the numbers are numpy 7.68 s, C++ 0.96 s, Julia 2.86 s, so the bounded
-heap alone is worth about 8x against numpy's partitioned copy per axis. Thirty-two
-threads then add only about 2x more: a single pass moves a gigabyte, so past a few
-threads this is memory-bound and the bus, not the CPU, sets the limit. That is why
-the total is 20x and not 200x, and why the deployment setting in Section 4.4 is
-where it matters.
+## What this is not
+
+The reference CSLS implementation ([MUSE](https://github.com/facebookresearch/MUSE),
+`get_nn_avg_dist`) uses faiss, `IndexFlatIP` or `GpuIndexFlatIP`, and searches
+the embeddings directly. That is the right shape at scale, because it never
+materialises the similarity matrix. These kernels assume the matrix exists,
+which holds for the transductive protocol in the paper and stops holding once
+the gallery is large enough that N x M does not fit. Past that point the top-M
+shortlist of Section 4.4, backed by an ANN index, is the path, not a faster
+reduction.
 
 ## Run
 
@@ -48,15 +42,9 @@ rustc -O --crate-type=cdylib csls.rs -o libcsls_rs.so
 python bench.py
 ```
 
-The GPU column appears when torch reports a device; every other column runs
-without one.
-
-`bench.py` runs numpy, C++ and Rust, and calls `bench.jl` as well if `julia` is on
-the path. Build the Rust library with
-`rustc -O --crate-type=cdylib csls.rs -o libcsls_rs.so`.
-
-Random values are a stand-in. To time a real similarity matrix instead, save one
-from an evaluation run and pass `--matrix`:
+`bench.py` calls `bench.jl` when julia is on the path and adds the GPU column
+when torch reports a device. `--matrix file.npy` times a real similarity matrix
+instead of random values:
 
 ```python
 from datasets import load_dataset
@@ -67,4 +55,4 @@ encoder = Encoder("siglip2")
 images, _ = encoder.images([row["image"] for row in split])
 texts = encoder.texts([c for row in split for c in row["captions"]])
 np.save("rocs_coco.npy", texts @ images.T)
-``` Julia sets its own thread count with `-t auto`; C++ follows `OMP_NUM_THREADS`.
+```
