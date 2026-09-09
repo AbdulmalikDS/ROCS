@@ -1,12 +1,21 @@
-# MINER / ROCS
+<div align="center">
+
+# MINER: Multi-crop INference-time Enhancement for Rare-Object Retrieval with Frozen Dual Encoders
+
+Abdulmalik Alquwayfili\*, Faisal AlMeshal, Jumanah Almajnouni, Huda Abdulhadi Alamri, Muhammad Kamran J Khan
+
+\*Corresponding author<br>
+Saudi Data and Artificial Intelligence Authority (SDAIA)
+
+[Paper](#) | [Dataset](https://huggingface.co/datasets/AbdulmalekDS/ROCS)
+
+</div>
 
 ![MINER on a ROCS query](assets/teaser.jpg)
 
 MINER improves text-to-image retrieval with a frozen encoder. It encodes the full image and five square crops, blends their scores, and applies CSLS to reduce hubness.
 
-Data: [AbdulmalekDS/ROCS](https://huggingface.co/datasets/AbdulmalekDS/ROCS) on the Hugging Face Hub.
-
-This repo contains the small evaluation release for the ROCS benchmark. The main method and lightweight crop comparisons share one encoder and scorer.
+ROCS is the benchmark it is evaluated on: cluttered COCO and Flickr30K scenes re-captioned so each query names one small, rare object.
 
 ## Run
 
