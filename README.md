@@ -15,6 +15,8 @@ python evaluate.py --model siglip2 --split coco
 
 Images and captions are pulled from [the ROCS dataset](https://huggingface.co/datasets/AbdulmalekDS/ROCS) on first run. `--split` takes `coco` or `flickr30k`. To score your own COCO-format file instead, pass `--annotations` and `--images-dir` together.
 
+`./reproduce.sh` runs every backbone on both splits, which is the ROCS half of Table 2 in the paper; it forwards extra flags, so `./reproduce.sh --limit 20` is a quick check.
+
 Supported models: `clip-large`, `siglip-so400m`, and `siglip2`. Add `--limit 20 --batch-size 2` for a small check. Model weights download on first use.
 
 A local file needs `images` entries with `id` and `file_name`, and `annotations` entries with `caption` and `id` (or COCO-style `image_id`).
