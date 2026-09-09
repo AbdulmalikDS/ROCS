@@ -1,5 +1,7 @@
 # MINER / ROCS
 
+![MINER on a ROCS query](assets/teaser.jpg)
+
 MINER improves text-to-image retrieval with a frozen encoder. It encodes the full image and five square crops, blends their scores, and applies CSLS to reduce hubness.
 
 Data: [AbdulmalekDS/ROCS](https://huggingface.co/datasets/AbdulmalekDS/ROCS) on the Hugging Face Hub.
