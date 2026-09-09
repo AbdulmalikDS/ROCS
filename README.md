@@ -13,6 +13,11 @@ MINER improves text-to-image retrieval with a frozen encoder. It encodes the ful
 
 ROCS is the benchmark it is evaluated on: cluttered COCO and Flickr30K scenes re-captioned so each query names one small, rare object.
 
+`appendix/` holds what the paper reports but the method does not need: the
+saliency-source comparison of Table 4, and `appendix/optimization/`, where CSLS
+is written six ways, numpy, C++, Rust, Julia, torch and CUDA, and timed against
+a growing gallery.
+
 ## Run
 
 Python 3.10 or newer, with PyTorch for your hardware:

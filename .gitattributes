@@ -1,0 +1,4 @@
+# GitHub's language badge counts bytes, which makes this look like a Python
+# repo. The kernels in appendix/optimization are the part worth surfacing.
+*.py linguist-detectable=false
+*.rs linguist-detectable=false
