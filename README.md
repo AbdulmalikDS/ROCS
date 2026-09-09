@@ -59,3 +59,6 @@ R@1, reported as ROCS-COCO / ROCS-Flickr30K. `evaluate.py` prints these three ro
 | SigLIP 2 So/16 | 47.08 / 48.00 | 50.29 / 52.28 | 52.36 / 53.84 |
 
 Encoders are loaded through [OpenCLIP](https://github.com/mlfoundations/open_clip).
+
+Code is MIT licensed. The ROCS annotations are CC BY 4.0; the images come from
+MS COCO and Flickr30K under their own terms.
