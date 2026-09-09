@@ -14,9 +14,9 @@ the gallery is larger.
 
 | gallery | numpy | C++ | Rust | Julia | torch | CUDA |
 |---|---|---|---|---|---|---|
-| 2,000 | 0.364 s | 0.035 s | 0.040 s | 0.025 s | 0.0043 s | 0.0081 s |
-| 8,000 | 1.998 s | 0.122 s | 0.163 s | 0.095 s | 0.0157 s | 0.0109 s |
-| 32,000 | 7.929 s | 0.425 s | 0.488 s | 0.379 s | 0.0571 s | 0.0194 s |
+| 2,000 | 0.364 s | 0.035 s | 0.040 s | 0.025 s | **0.0043 s** | 0.0081 s |
+| 8,000 | 1.998 s | 0.122 s | 0.163 s | 0.095 s | 0.0157 s | **0.0109 s** |
+| 32,000 | 7.929 s | 0.425 s | 0.488 s | 0.379 s | 0.0571 s | **0.0194 s** |
 
 All within 5e-7 of the numpy result. numpy is CPU-only and serves as the
 baseline. GPU times have the matrix already resident, which is the real case
@@ -36,7 +36,7 @@ in three kernels but keeps k in registers throughout, and it beats torch above
 | version | time |
 |---|---|
 | thread per column, block per row, thread 0 merges the block's 2,560 candidates | 0.0217 s |
-| warp-shuffle merge (`__shfl_down_sync`) and `float4` loads on the row pass | 0.0194 s |
+| warp-shuffle merge (`__shfl_down_sync`) and `float4` loads on the row pass | **0.0194 s** |
 
 Small k is why registers win: a sorted insertion list of 10 floats beats a heap,
 and merging two lanes' lists costs 10 shuffles. The shuffle has to read the
