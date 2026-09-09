@@ -6,13 +6,11 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Optional
 
 import cv2
 import numpy as np
 import torch
 from PIL import Image
-
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _CLIP_SURGERY_REPO = _PROJECT_ROOT / "third_party" / "CLIP_Surgery"
@@ -43,7 +41,7 @@ class CLIPSurgerySaliencyExtractor:
     def __init__(
         self,
         model_name: str = "CS-ViT-L/14",
-        device: Optional[str] = None,
+        device: str | None = None,
     ) -> None:
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.model, self.preprocess, self.cs_clip = _load_clip_surgery(
@@ -63,7 +61,7 @@ class CLIPSurgerySaliencyExtractor:
         # query string (so it can be reused across all candidate images for
         # one query). See clear_cache() to reset.
         self._img_feat_cache: dict[int, torch.Tensor] = {}
-        self._redundant_feat: Optional[torch.Tensor] = None
+        self._redundant_feat: torch.Tensor | None = None
         self._text_feat_cache: dict[str, torch.Tensor] = {}
 
     @torch.no_grad()

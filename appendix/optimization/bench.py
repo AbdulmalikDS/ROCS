@@ -99,7 +99,7 @@ def julia_times():
         return {}
     script = Path(__file__).resolve().parent
     done = subprocess.run(["julia", "-t", "auto", "bench.jl"], cwd=script,
-                          capture_output=True, text=True)
+                          capture_output=True, text=True, check=False)
     return {int(size): float(seconds)
             for size, seconds in (line.split() for line in done.stdout.split("\n") if line)}
 

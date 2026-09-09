@@ -8,7 +8,6 @@ setting and the transfer is reported separately.
 
 CSLS: https://arxiv.org/abs/1710.04087
 """
-import torch
 
 
 def csls_gpu(sim, k=10, device="cuda"):

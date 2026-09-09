@@ -8,15 +8,12 @@ MaskCLIP: https://arxiv.org/abs/2112.01071
 """
 from __future__ import annotations
 
-from typing import Optional
-
 import cv2
 import numpy as np
 import torch
 import torch.nn.functional as F
 from PIL import Image
 from torchvision import transforms as T
-
 
 _OPENAI_MEAN = (0.48145466, 0.4578275, 0.40821073)
 _OPENAI_STD = (0.26862954, 0.26130258, 0.27577711)
@@ -56,7 +53,7 @@ class MaskCLIPSaliencyExtractor:
         self,
         model_name: str = "ViT-L-14",
         pretrained: str = "openai",
-        device: Optional[str] = None,
+        device: str | None = None,
         input_size: int = 224,
     ) -> None:
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")

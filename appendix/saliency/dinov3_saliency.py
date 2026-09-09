@@ -11,14 +11,12 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Optional
 
 import cv2
 import numpy as np
 import torch
 from PIL import Image
 from torchvision import transforms as T
-
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _DINOV3_REPO = _PROJECT_ROOT / "third_party" / "dinov3"
@@ -38,8 +36,7 @@ def _load_dinov3(model_name: str = "dinov3_vitl16", device: str = "cuda"):
             str(_DINOV3_REPO), model_name,
             source="local", trust_repo=True, pretrained=True,
         ).to(device).eval()
-    except Exception:
-        # Direct import fallback. Same code path under the hood.
+    except Exception:  # noqa: BLE001 - hub.load fails several ways; any of them means fall back
         from dinov3.hub.backbones import dinov3_vitb16, dinov3_vitl16
         loader = {"dinov3_vitb16": dinov3_vitb16,
                   "dinov3_vitl16": dinov3_vitl16}[model_name]
@@ -59,7 +56,7 @@ class DINOv3SaliencyExtractor:
     def __init__(
         self,
         model_name: str = "dinov3_vitl16",
-        device: Optional[str] = None,
+        device: str | None = None,
         input_size: int = 224,
     ) -> None:
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
