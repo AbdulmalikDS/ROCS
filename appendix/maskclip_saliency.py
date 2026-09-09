@@ -1,35 +1,10 @@
-"""
-Saliency extractor based on MaskCLIP (Zhou et al., ECCV 2022 oral,
-"Extract Free Dense Labels from CLIP", arXiv 2112.01071).
+"""Dense per-patch CLIP features, following MaskCLIP.
 
-Paper §3.1 formulation:
+In the last attention block only, tokens bypass attention and go through the
+value and output projections, then ln_post and the visual projection. Saliency
+is the CLS-to-patch cosine over the result.
 
-    "we propose to remove the query and key embeddings and transform
-    both the value embedding and the last linear layer (Linear) into
-    two convolutional layers."
-
-That is: in the LAST attention block only, bypass attention entirely
-and pass each token through the value projection followed by the
-output projection — no QK softmax, no token mixing. Then apply
-ln_post and the visual projection to every patch (not just CLS).
-
-This is what we implement below. Earlier blocks run unchanged so the
-backbone stays a real CLIP encoder; the trick is local to the final
-layer's readout.
-
-Implementation notes (vs. an earlier broken version of this file):
-
-  - open_clip's ``Transformer`` is batch-first (``[B, N+1, D]``); we
-    do NOT permute to LND like the OpenAI reference.
-  - ``visual.proj`` may be a Linear (open_clip ≥ 2024 conversions) or
-    a raw parameter; both paths are handled.
-  - Preprocessing uses ``Resize((n, n))`` (no center crop). For
-    cropping pipelines the saliency square must align with the
-    full image we're cropping from, otherwise boxes shift away
-    from the actual object on non-square inputs. CLIP Surgery's
-    demo makes the same choice for the same reason.
-
-Reference repository: https://github.com/chongzhou96/MaskCLIP
+MaskCLIP: https://arxiv.org/abs/2112.01071
 """
 from __future__ import annotations
 

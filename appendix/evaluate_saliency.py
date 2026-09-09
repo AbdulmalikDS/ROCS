@@ -1,10 +1,5 @@
-"""Appendix: does the saliency source that places the crop matter?
-
-Replaces the centre crop of the five-crop layout with one crop centred on a
-saliency peak, then runs the same scorer as `evaluate.py`. The paper reports
-that swapping the source moves R@1 by at most 0.42, which is the claim this
-script exists to let you check.
-"""
+"""Does the saliency source that places a crop matter? The paper says no,
+at most 0.42 R@1 across sources. This runs that check."""
 import argparse
 import sys
 from pathlib import Path

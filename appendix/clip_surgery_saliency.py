@@ -1,22 +1,6 @@
-"""
-Saliency extractor based on CLIP Surgery (Li et al., arXiv 2304.05653).
+"""Saliency from CLIP Surgery's dual-path architecture.
 
-Reference implementation:
-  - Repository: https://github.com/xmed-lab/CLIP_Surgery
-    cloned to ``third_party/CLIP_Surgery/``.
-  - Their custom ``clip`` package implements an in-architecture
-    modification of CLIP's last self-attention layer: a dual-branch
-    design that produces both standard CLS features and "surgery"
-    per-patch features that are cleaned of attention sinks.
-  - The model variant ``CS-ViT-L/14`` matches the OpenAI CLIP-L/14
-    weights used elsewhere in this paper (no extra training; weights
-    downloaded automatically by their ``clip.load``).
-
-The reference localization path is query-conditioned:
-``encode_image`` -> ``clip_feature_surgery(image, text, redundant)`` ->
-``get_similarity_map``. We expose that as ``extract_query``. The plain
-``extract`` method remains a query-free CLS-to-patch cosine diagnostic,
-not the CLIP Surgery paper's text-conditioned explanation recipe.
+CLIP Surgery: https://arxiv.org/abs/2304.05653
 """
 from __future__ import annotations
 

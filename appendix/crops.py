@@ -1,13 +1,8 @@
-"""Saliency-placed crops: the appendix variant of the fixed five-crop layout.
-
-The centre crop is replaced by one crop centred on the saliency peak; the four
-corners are unchanged. Ported from ``large_overlap_saliency_crops`` in the
-research workspace so the numbers stay comparable.
-"""
 import numpy as np
 
 
 def saliency_boxes(image, saliency, n=5, crop_ratio=0.6):
+    """Five crops with the centre one moved onto the saliency peak."""
     w, h = image.size
     cw, ch = int(w * crop_ratio), int(h * crop_ratio)
     rows, cols = saliency.shape

@@ -1,30 +1,11 @@
-"""
-Saliency extractor based on DINOv3 ViT-L/16 with register tokens.
+"""Saliency from DINOv3 ViT-L/16 features.
 
-Reference implementations:
-  - DINOv3 (Meta, 2024): code in `third_party/dinov3/` (this repo).
-    Hub entrypoint `dinov3.hub.backbones.dinov3_vitl16` with default
-    `Weights.LVD1689M` pretrained checkpoint.
-  - DINO original visualisation: facebookresearch/dino,
-    visualize_attention.py — last-layer CLS attention to patches.
-  - CLIP-DINOiser (Wysoczanska et al. CVPR 2024, arXiv 2312.12359):
-    uses CLS-to-patch cosine similarity on output features rather than
-    raw attention; cleaner for downstream pooling.
+Cosine between the CLS feature and each patch feature at the last layer, the
+choice CLIP-DINOiser makes; DINOv3 uses scaled_dot_product_attention and does
+not expose attention weights. Weights come from the local torch.hub cache.
 
-We follow CLIP-DINOiser's choice: cosine similarity between the CLS
-feature and each patch feature at the last layer's output (post-norm).
-DINOv3's `SelfAttention` uses
-`torch.nn.functional.scaled_dot_product_attention` and does not return
-attention weights, so feature-cosine is the practical signal anyway.
-
-The DINOv3 ViT-L/16 LVD-1689M weights are gated via Meta's licence
-agreement; we rely on torch.hub finding them in the local cache at
-``~/.cache/torch/hub/checkpoints/dinov3_vitl16_pretrain_lvd1689m-*.pth``.
-
-Output: 2D saliency map in [0, 1] of size (target_size, target_size),
-ready for ``RegionDetector.detect(...)``. For crop selection we resize the
-full image to a square instead of center-cropping, so saliency coordinates
-stay aligned with the original image used by the detector.
+DINOv3: https://arxiv.org/abs/2508.10104
+CLIP-DINOiser: https://arxiv.org/abs/2312.12359
 """
 from __future__ import annotations
 
