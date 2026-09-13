@@ -75,7 +75,7 @@ instead of random values:
 from datasets import load_dataset
 from miner.encoder import Encoder
 import numpy as np
-split = load_dataset("AbdulmalekDS/ROCS", "coco", split="test")
+split = load_dataset("aalquwayfili/ROCS", "coco", split="test")
 encoder = Encoder("siglip2")
 images, _ = encoder.images([row["image"] for row in split])
 texts = encoder.texts([c for row in split for c in row["captions"]])

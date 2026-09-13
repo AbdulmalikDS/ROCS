@@ -3,7 +3,7 @@
 # MINER: Multi-crop INference-time Enhancement for Rare-Object Retrieval with Frozen Dual Encoders
 
 
-[Paper](#) | [Dataset](https://huggingface.co/datasets/AbdulmalekDS/ROCS)
+[Paper](#) | [Dataset](https://huggingface.co/datasets/aalquwayfili/ROCS)
 
 </div>
 

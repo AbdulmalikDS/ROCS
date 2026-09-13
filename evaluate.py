@@ -29,7 +29,7 @@ class _Rows:
 def load_split(dataset, config, limit=None, revision=None):
     from datasets import load_dataset
 
-    if revision is None and dataset == "AbdulmalekDS/ROCS":
+    if revision is None and dataset == "aalquwayfili/ROCS":
         revision = ROCS_REVISION
     split = load_dataset(dataset, config, split="test", revision=revision)
     if limit:
@@ -62,7 +62,7 @@ def load_queries(annotations, images_dir, limit=None):
 def main():
     parser = argparse.ArgumentParser(description="Evaluate global retrieval and MINER on ROCS.")
     parser.add_argument("--split", choices=["coco", "flickr30k"], default="coco")
-    parser.add_argument("--dataset", default="AbdulmalekDS/ROCS")
+    parser.add_argument("--dataset", default="aalquwayfili/ROCS")
     parser.add_argument("--revision", help="dataset revision; ROCS defaults to the paper snapshot")
     parser.add_argument("--annotations", type=Path)
     parser.add_argument("--images-dir", type=Path)

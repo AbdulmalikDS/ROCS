@@ -30,7 +30,7 @@ def main():
     parser.add_argument("--dinov3-weights", type=Path,
                         help="local DINOv3 ViT-L/16 LVD-1689M checkpoint (required for dinov3)")
     parser.add_argument("--split", choices=["coco", "flickr30k"], default="coco")
-    parser.add_argument("--dataset", default="AbdulmalekDS/ROCS")
+    parser.add_argument("--dataset", default="aalquwayfili/ROCS")
     parser.add_argument("--revision", help="dataset revision; ROCS defaults to the paper snapshot")
     parser.add_argument("--annotations", type=Path)
     parser.add_argument("--images-dir", type=Path)
