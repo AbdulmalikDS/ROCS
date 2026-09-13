@@ -13,13 +13,13 @@ from miner.retrieval import recall_at_k, score
 SOURCES = ("maskclip", "dinov3", "clip-surgery")
 
 
-def build_extractor(source, device):
+def build_extractor(source, device, dinov3_weights=None):
     if source == "maskclip":
         from appendix.saliency.maskclip_saliency import MaskCLIPSaliencyExtractor
         return MaskCLIPSaliencyExtractor(device=device)
     if source == "dinov3":
         from appendix.saliency.dinov3_saliency import DINOv3SaliencyExtractor
-        return DINOv3SaliencyExtractor(device=device)
+        return DINOv3SaliencyExtractor(device=device, weights=dinov3_weights)
     from appendix.saliency.clip_surgery_saliency import CLIPSurgerySaliencyExtractor
     return CLIPSurgerySaliencyExtractor(device=device)
 
@@ -27,6 +27,8 @@ def build_extractor(source, device):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", choices=SOURCES, required=True)
+    parser.add_argument("--dinov3-weights", type=Path,
+                        help="local DINOv3 ViT-L/16 LVD-1689M checkpoint (required for dinov3)")
     parser.add_argument("--split", choices=["coco", "flickr30k"], default="coco")
     parser.add_argument("--dataset", default="AbdulmalekDS/ROCS")
     parser.add_argument("--annotations", type=Path)
@@ -41,6 +43,12 @@ def main():
     args = parser.parse_args()
     if bool(args.annotations) != bool(args.images_dir):
         parser.error("pass --annotations and --images-dir together, or neither")
+    if args.source == "dinov3" and args.dinov3_weights is None:
+        parser.error("--source dinov3 requires --dinov3-weights; see appendix/saliency/README.md")
+    if args.source != "dinov3" and args.dinov3_weights is not None:
+        parser.error("--dinov3-weights is only used with --source dinov3")
+    if args.dinov3_weights is not None and not args.dinov3_weights.expanduser().is_file():
+        parser.error("DINOv3 checkpoint does not exist")
 
     if args.annotations:
         sources, queries, targets = load_queries(args.annotations, args.images_dir, args.limit)
@@ -48,7 +56,7 @@ def main():
         sources, queries, targets = load_split(args.dataset, args.split, args.limit)
 
     encoder = Encoder(args.model, args.device)
-    extractor = build_extractor(args.source, encoder.device)
+    extractor = build_extractor(args.source, encoder.device, args.dinov3_weights)
     print(f"Encoding {len(sources)} images and {len(queries)} queries with {args.source}...",
           flush=True)
 

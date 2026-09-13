@@ -21,15 +21,24 @@ git clone https://github.com/xmed-lab/CLIP_Surgery appendix/saliency/third_party
 
 MaskCLIP needs no clone; it reads dense features from the CLIP checkpoint directly.
 
+For DINOv3, request access through the [upstream model page](https://github.com/facebookresearch/dinov3#pretrained-models)
+and download the **ViT-L/16 LVD-1689M** checkpoint,
+`dinov3_vitl16_pretrain_lvd1689m-8aa4cbdd.pth`. Pass its local path explicitly;
+cloning the source alone does not grant access to the weights.
+
 ## Run
 
 ```bash
 python appendix/saliency/evaluate_saliency.py --source maskclip --split coco
+python appendix/saliency/evaluate_saliency.py --source dinov3 --split coco \
+  --dinov3-weights /path/to/dinov3_vitl16_pretrain_lvd1689m-8aa4cbdd.pth
 ```
 
-`--source` takes `maskclip`, `dinov3`, or `clip-surgery`. Every other flag matches
-`evaluate.py`. The centre crop moves to the saliency peak and the four corners stay
-fixed, so only crop placement changes.
+`--source` takes `maskclip`, `dinov3`, or `clip-surgery`. Dataset, model,
+device, batch size, limit, alpha, k, crop ratio, and custom-annotation flags match
+`evaluate.py`; crop-strategy and region-count flags are not exposed here. The
+centre crop moves to the saliency peak and the four corners stay fixed, so only
+crop placement changes.
 
 Reference numbers on ROCS-COCO with SigLIP 2, R@1: MaskCLIP 52.02, DINOv3 52.44,
 CLIP-Surgery 52.23, against 52.36 for the parameter-free fixed crops. The paper's

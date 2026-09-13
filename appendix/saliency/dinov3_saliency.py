@@ -17,19 +17,20 @@ _IMAGENET_MEAN = (0.485, 0.456, 0.406)
 _IMAGENET_STD = (0.229, 0.224, 0.225)
 
 
-def _load_dinov3(model_name: str = "dinov3_vitl16", device: str = "cuda"):
+def _load_dinov3(model_name: str = "dinov3_vitl16", device: str = "cuda", weights=None):
+    if weights is None:
+        raise ValueError("Pass a downloaded DINOv3 checkpoint with --dinov3-weights.")
+    checkpoint = Path(weights).expanduser().resolve()
+    if not checkpoint.is_file():
+        raise FileNotFoundError(f"DINOv3 checkpoint not found: {checkpoint}")
+    if not (_DINOV3_REPO / "dinov3" / "hub" / "backbones.py").is_file():
+        raise FileNotFoundError(f"Clone facebookresearch/dinov3 into {_DINOV3_REPO}.")
     if str(_DINOV3_REPO) not in sys.path:
         sys.path.insert(0, str(_DINOV3_REPO))
-    try:
-        return torch.hub.load(
-            str(_DINOV3_REPO), model_name,
-            source="local", trust_repo=True, pretrained=True,
-        ).to(device).eval()
-    except Exception:  # noqa: BLE001 - hub.load fails several ways; any of them means fall back
-        from dinov3.hub.backbones import dinov3_vitb16, dinov3_vitl16
-        loader = {"dinov3_vitb16": dinov3_vitb16,
-                  "dinov3_vitl16": dinov3_vitl16}[model_name]
-        return loader(pretrained=True, check_hash=False).to(device).eval()
+    # hubconf.py also imports unused segmentation and evaluation dependencies.
+    from dinov3.hub import backbones
+
+    return getattr(backbones, model_name)(pretrained=True, weights=str(checkpoint)).to(device).eval()
 
 
 class DINOv3SaliencyExtractor:
@@ -38,10 +39,11 @@ class DINOv3SaliencyExtractor:
         model_name: str = "dinov3_vitl16",
         device: str | None = None,
         input_size: int = 224,
+        weights: str | Path | None = None,
     ) -> None:
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.input_size = input_size
-        self.model = _load_dinov3(model_name, device=self.device)
+        self.model = _load_dinov3(model_name, device=self.device, weights=weights)
         self.patch_size = self.model.patch_size
         self.n_storage_tokens = getattr(self.model, "n_storage_tokens", 0)
         if self.input_size % self.patch_size != 0:
