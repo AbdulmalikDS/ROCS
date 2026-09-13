@@ -77,6 +77,13 @@ class RetrievalTests(unittest.TestCase):
             self.assertEqual((len(sources), sources[1]), (2, 'second'))
             self.assertEqual(len(load_split('repo', 'coco', limit=1)[1]), 2)
 
+        def versioned_split(dataset, config, split, revision=None):
+            return Split(rows if revision == 'release' else [])
+
+        with patch('datasets.load_dataset', side_effect=versioned_split):
+            sources, queries, _ = load_split('repo', 'coco', revision='release')
+            self.assertEqual((len(sources), len(queries)), (2, 3))
+
     def test_encoder_preserves_image_rows_and_rejects_varying_crop_counts(self):
         encoder = Encoder.__new__(Encoder)
         encoder.device, encoder.image_size = 'cpu', (8, 8)

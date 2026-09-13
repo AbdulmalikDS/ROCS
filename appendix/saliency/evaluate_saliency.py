@@ -31,6 +31,7 @@ def main():
                         help="local DINOv3 ViT-L/16 LVD-1689M checkpoint (required for dinov3)")
     parser.add_argument("--split", choices=["coco", "flickr30k"], default="coco")
     parser.add_argument("--dataset", default="AbdulmalekDS/ROCS")
+    parser.add_argument("--revision", help="dataset revision; ROCS defaults to the paper snapshot")
     parser.add_argument("--annotations", type=Path)
     parser.add_argument("--images-dir", type=Path)
     parser.add_argument("--model", choices=MODELS, default="siglip2")
@@ -53,7 +54,7 @@ def main():
     if args.annotations:
         sources, queries, targets = load_queries(args.annotations, args.images_dir, args.limit)
     else:
-        sources, queries, targets = load_split(args.dataset, args.split, args.limit)
+        sources, queries, targets = load_split(args.dataset, args.split, args.limit, args.revision)
 
     encoder = Encoder(args.model, args.device)
     extractor = build_extractor(args.source, encoder.device, args.dinov3_weights)

@@ -29,6 +29,8 @@ python evaluate.py --model siglip2 --split coco   # one cell
 
 Captions, images and model weights all download on first run. Each run prints R@1, R@5
 and R@10 for global retrieval, global retrieval with CSLS, and MINER.
+The ROCS dataset defaults to the paper snapshot; `--revision` selects another
+Hugging Face revision.
 
 | Flag | Default | |
 |---|---|---|
@@ -40,6 +42,7 @@ and R@10 for global retrieval, global retrieval with CSLS, and MINER.
 | `--crop-ratio` | `0.6` | fixed crop width and height as fractions of image width and height |
 | `--n-regions` | `5` | crops per image |
 | `--limit` | | first N images, for a quick check |
+| `--revision` | paper snapshot | dataset commit or tag |
 
 CSLS is computed over the full evaluation matrix, matching the paper. Random crops keep
 the original 30–70% scale range, so that row moves a little with `--seed`.

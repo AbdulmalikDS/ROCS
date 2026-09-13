@@ -10,6 +10,8 @@ from miner.crops import fixed5_boxes, grid_boxes, random_boxes
 from miner.encoder import MODELS, Encoder
 from miner.retrieval import recall_at_k, score
 
+ROCS_REVISION = "938ac07d95058366f2b0bbf997513eaa9258df3b"
+
 
 class _Rows:
     """Lazy image access so a whole split is not decoded into memory."""
@@ -24,10 +26,12 @@ class _Rows:
         return self.split[index]["image"]
 
 
-def load_split(dataset, config, limit=None):
+def load_split(dataset, config, limit=None, revision=None):
     from datasets import load_dataset
 
-    split = load_dataset(dataset, config, split="test")
+    if revision is None and dataset == "AbdulmalekDS/ROCS":
+        revision = ROCS_REVISION
+    split = load_dataset(dataset, config, split="test", revision=revision)
     if limit:
         split = split.select(range(min(limit, len(split))))
     queries, targets = [], []
@@ -59,6 +63,7 @@ def main():
     parser = argparse.ArgumentParser(description="Evaluate global retrieval and MINER on ROCS.")
     parser.add_argument("--split", choices=["coco", "flickr30k"], default="coco")
     parser.add_argument("--dataset", default="AbdulmalekDS/ROCS")
+    parser.add_argument("--revision", help="dataset revision; ROCS defaults to the paper snapshot")
     parser.add_argument("--annotations", type=Path)
     parser.add_argument("--images-dir", type=Path)
     parser.add_argument("--model", choices=MODELS, default="siglip2")
@@ -92,7 +97,7 @@ def main():
     if args.annotations:
         sources, queries, targets = load_queries(args.annotations, args.images_dir, args.limit)
     else:
-        sources, queries, targets = load_split(args.dataset, args.split, args.limit)
+        sources, queries, targets = load_split(args.dataset, args.split, args.limit, args.revision)
     print(f"Encoding {len(sources)} images and {len(queries)} queries...", flush=True)
     encoder = Encoder(args.model, args.device)
     global_features, crops = encoder.images(sources, args.batch_size, cropper=cropper)

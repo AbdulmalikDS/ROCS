@@ -34,7 +34,7 @@ python appendix/saliency/evaluate_saliency.py --source dinov3 --split coco \
   --dinov3-weights /path/to/dinov3_vitl16_pretrain_lvd1689m-8aa4cbdd.pth
 ```
 
-`--source` takes `maskclip`, `dinov3`, or `clip-surgery`. Dataset, model,
+`--source` takes `maskclip`, `dinov3`, or `clip-surgery`. Dataset, revision, model,
 device, batch size, limit, alpha, k, crop ratio, and custom-annotation flags match
 `evaluate.py`; crop-strategy and region-count flags are not exposed here. The
 centre crop moves to the saliency peak and the four corners stay fixed, so only
