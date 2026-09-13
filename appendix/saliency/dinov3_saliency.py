@@ -1,12 +1,5 @@
-"""Saliency from DINOv3 ViT-L/16 features.
-
-Cosine between the CLS feature and each patch feature at the last layer, the
-choice CLIP-DINOiser makes; DINOv3 uses scaled_dot_product_attention and does
-not expose attention weights. Weights come from the local torch.hub cache.
-
-DINOv3: https://arxiv.org/abs/2508.10104
-CLIP-DINOiser: https://arxiv.org/abs/2312.12359
-"""
+# DINOv3: https://arxiv.org/abs/2508.10104
+# CLS-to-patch cosine follows CLIP-DINOiser: https://arxiv.org/abs/2312.12359
 from __future__ import annotations
 
 import sys
@@ -26,9 +19,6 @@ _IMAGENET_STD = (0.229, 0.224, 0.225)
 
 
 def _load_dinov3(model_name: str = "dinov3_vitl16", device: str = "cuda"):
-    """Load DINOv3 from the local third_party copy. Tries torch.hub first
-    (which uses ``~/.cache/torch/hub/checkpoints``); falls back to
-    direct import if the hub-load fails."""
     if str(_DINOV3_REPO) not in sys.path:
         sys.path.insert(0, str(_DINOV3_REPO))
     try:
@@ -44,15 +34,6 @@ def _load_dinov3(model_name: str = "dinov3_vitl16", device: str = "cuda"):
 
 
 class DINOv3SaliencyExtractor:
-    """Produce a 2D saliency map for an input image using a frozen
-    DINOv3 ViT backbone. Saliency = cosine similarity between the CLS
-    feature and each patch feature at the last layer's output.
-
-    DINOv3 register / storage tokens are excluded automatically:
-    ``get_intermediate_layers`` returns only the patch tokens after
-    the CLS and storage-token slices.
-    """
-
     def __init__(
         self,
         model_name: str = "dinov3_vitl16",
@@ -64,12 +45,10 @@ class DINOv3SaliencyExtractor:
         self.model = _load_dinov3(model_name, device=self.device)
         self.patch_size = self.model.patch_size
         self.n_storage_tokens = getattr(self.model, "n_storage_tokens", 0)
-        # Round input_size to a multiple of patch_size.
         if self.input_size % self.patch_size != 0:
             self.input_size = (self.input_size // self.patch_size) * self.patch_size
         self.grid = self.input_size // self.patch_size
-        # Resize the full frame to a square. Center-cropping would make the
-        # saliency grid disagree with RegionDetector's full-image coordinates.
+        # Keep saliency coordinates aligned with the full image.
         self.transform = T.Compose([
             T.Resize((self.input_size, self.input_size),
                      interpolation=T.InterpolationMode.BICUBIC),
@@ -79,20 +58,16 @@ class DINOv3SaliencyExtractor:
 
     @torch.no_grad()
     def extract(self, image: Image.Image, target_size: int = 384) -> np.ndarray:
-        """Return saliency [target_size, target_size] in [0, 1]."""
         x = self.transform(image.convert("RGB")).unsqueeze(0).to(self.device)
-        # n=1, reshape=True, return_class_token=True
-        # -> tuple of length 1: ((patch_features [1, D, h, w], cls_token [1, D]),)
-        # Storage / register tokens are already excluded inside
-        # ``get_intermediate_layers`` via the n_storage_tokens patch slice.
+        # The backbone excludes register tokens from returned patches.
         outputs = self.model.get_intermediate_layers(
             x, n=1, reshape=True, return_class_token=True, norm=True,
         )
-        feats, cls = outputs[0]  # [1, D, h, w], [1, D]
-        feats_flat = feats.reshape(1, feats.shape[1], -1)             # [1, D, N]
+        feats, cls = outputs[0]
+        feats_flat = feats.reshape(1, feats.shape[1], -1)
         feats_n = feats_flat / (feats_flat.norm(dim=1, keepdim=True) + 1e-8)
-        cls_n = cls / (cls.norm(dim=1, keepdim=True) + 1e-8)          # [1, D]
-        sim = (cls_n.unsqueeze(-1) * feats_n).sum(dim=1)              # [1, N]
+        cls_n = cls / (cls.norm(dim=1, keepdim=True) + 1e-8)
+        sim = (cls_n.unsqueeze(-1) * feats_n).sum(dim=1)
         h, w = feats.shape[-2:]
         sim_map = sim.reshape(h, w).detach().cpu().numpy().astype(np.float32)
         lo, hi = float(sim_map.min()), float(sim_map.max())

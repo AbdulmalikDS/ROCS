@@ -1,5 +1,4 @@
-"""Does the saliency source that places a crop matter? The paper says no,
-at most 0.42 R@1 across sources. This runs that check."""
+"""Evaluate saliency-guided crop placement."""
 import argparse
 import sys
 from pathlib import Path

@@ -1,7 +1,4 @@
-"""Saliency from CLIP Surgery's dual-path architecture.
-
-CLIP Surgery: https://arxiv.org/abs/2304.05653
-"""
+# CLIP Surgery: https://arxiv.org/abs/2304.05653
 from __future__ import annotations
 
 import sys
@@ -18,12 +15,9 @@ _CLIP_SURGERY_REPO = _PROJECT_ROOT / "third_party" / "CLIP_Surgery"
 
 def _load_clip_surgery(model_name: str = "CS-ViT-L/14",
                        device: str = "cuda"):
-    """Load CLIP Surgery from third_party/CLIP_Surgery. Their fork ships
-    its own ``clip`` package; we put it on sys.path before import."""
     if str(_CLIP_SURGERY_REPO) not in sys.path:
         sys.path.insert(0, str(_CLIP_SURGERY_REPO))
-    # Guard against any pre-imported open_clip or stock clip — CLIP
-    # Surgery's ``clip`` is a custom fork.
+    # CLIP Surgery needs its own fork of the clip package.
     for mod in [m for m in list(sys.modules) if m.startswith("clip")]:
         del sys.modules[mod]
     import clip as cs_clip
@@ -33,11 +27,6 @@ def _load_clip_surgery(model_name: str = "CS-ViT-L/14",
 
 
 class CLIPSurgerySaliencyExtractor:
-    """Produce a 2D saliency map for an input image using CLIP Surgery
-    (CS-ViT-L/14). Saliency = cosine similarity between the CLS feature
-    and each surgery-cleaned patch feature.
-    """
-
     def __init__(
         self,
         model_name: str = "CS-ViT-L/14",
@@ -48,34 +37,22 @@ class CLIPSurgerySaliencyExtractor:
             model_name=model_name, device=self.device,
         )
         self.model_name = model_name
-        # CS-ViT-L/14 takes 224 input by default → 14 grid (14*14=196 patches);
-        # CS-ViT-L/14@336px takes 336 → 24 grid. We store grid for reshape.
-        # Inferred from the visual.input_resolution attribute.
         self.input_size = self.model.visual.input_resolution
-        # Patch size: pull from conv1 kernel.
         self.patch_size = self.model.visual.conv1.kernel_size[0]
         self.grid = self.input_size // self.patch_size
-        # Caches for query-conditioned reranking: image features are
-        # query-independent, the empty-prompt redundant feature is a
-        # constant, and the prompt-ensemble text feature depends only on the
-        # query string (so it can be reused across all candidate images for
-        # one query). See clear_cache() to reset.
         self._img_feat_cache: dict[int, torch.Tensor] = {}
         self._redundant_feat: torch.Tensor | None = None
         self._text_feat_cache: dict[str, torch.Tensor] = {}
 
     @torch.no_grad()
     def extract(self, image: Image.Image, target_size: int = 384) -> np.ndarray:
-        """Return saliency [target_size, target_size] in [0, 1]."""
         x = self.preprocess(image.convert("RGB")).unsqueeze(0).to(self.device)
-        # encode_image returns per-patch features [B, N+1, D] with CLS at 0.
         feats = self.model.encode_image(x)
-        # feats shape: [1, N+1, D]
-        cls = feats[:, 0, :]                     # [1, D]
-        patch_feats = feats[:, 1:, :]            # [1, N, D]
+        cls = feats[:, 0, :]
+        patch_feats = feats[:, 1:, :]
         cls_n = cls / (cls.norm(dim=-1, keepdim=True) + 1e-8)
         patch_n = patch_feats / (patch_feats.norm(dim=-1, keepdim=True) + 1e-8)
-        sim = (cls_n.unsqueeze(1) * patch_n).sum(dim=-1)  # [1, N]
+        sim = (cls_n.unsqueeze(1) * patch_n).sum(dim=-1)
         sim_np = sim[0].detach().cpu().numpy().astype(np.float32)
         sim_map = sim_np.reshape(self.grid, self.grid)
         lo, hi = float(sim_map.min()), float(sim_map.max())
@@ -120,15 +97,9 @@ class CLIPSurgerySaliencyExtractor:
     @torch.no_grad()
     def extract_query(self, image: Image.Image, text_query: str,
                       target_size: int = 384) -> np.ndarray:
-        """Return CLIP Surgery's reference query-conditioned saliency map.
-
-        For a single text query, the upstream demo uses empty-string
-        redundant features. Without that argument, ``clip_feature_surgery``
-        computes the redundant feature as the mean over classes; with one
-        class that degenerates to nearly zero signal.
-        """
         img_feat = self._img_feat_for_image(image)
         text_feat = self._get_text_feat(text_query)
+        # Empty-prompt features prevent single-class subtraction from erasing the signal.
         redundant_feat = self._get_redundant_feat()
         sim = self.cs_clip.clip_feature_surgery(
             img_feat, text_feat, redundant_feat)

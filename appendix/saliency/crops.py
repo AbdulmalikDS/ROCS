@@ -2,7 +2,6 @@ import numpy as np
 
 
 def saliency_boxes(image, saliency, n=5, crop_ratio=0.6):
-    """Five crops with the centre one moved onto the saliency peak."""
     w, h = image.size
     cw, ch = int(w * crop_ratio), int(h * crop_ratio)
     rows, cols = saliency.shape

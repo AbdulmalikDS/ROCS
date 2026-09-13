@@ -1,11 +1,4 @@
-"""Dense per-patch CLIP features, following MaskCLIP.
-
-In the last attention block only, tokens bypass attention and go through the
-value and output projections, then ln_post and the visual projection. Saliency
-is the CLS-to-patch cosine over the result.
-
-MaskCLIP: https://arxiv.org/abs/2112.01071
-"""
+# MaskCLIP: https://arxiv.org/abs/2112.01071
 from __future__ import annotations
 
 import cv2
@@ -21,15 +14,10 @@ _OPENAI_STD = (0.26862954, 0.26130258, 0.27577711)
 
 def _v_only_attention(attn: torch.nn.MultiheadAttention,
                       x: torch.Tensor) -> torch.Tensor:
-    """Bypass attention: V projection followed by out_proj, per token.
-
-    ``x`` is ``[B, N+1, D]`` (open_clip batch-first). ``attn`` is an
-    ``nn.MultiheadAttention`` whose ``in_proj_weight`` is ``[3D, D]``
-    stacked as Q | K | V. We slice V, apply, then apply out_proj.
-    """
     D = attn.embed_dim
     in_w = attn.in_proj_weight
     in_b = attn.in_proj_bias
+    # Packed projection weights are ordered Q, K, V.
     v = F.linear(x, in_w[2 * D:3 * D],
                  in_b[2 * D:3 * D] if in_b is not None else None)
     return F.linear(v, attn.out_proj.weight, attn.out_proj.bias)
@@ -42,13 +30,6 @@ def _layerscale(block: torch.nn.Module, name: str,
 
 
 class MaskCLIPSaliencyExtractor:
-    """Per-patch saliency from a CLIP backbone with the MaskCLIP
-    last-layer readout (no QK in the final block).
-
-    Defaults to ``ViT-L-14`` openai weights so it matches the CLIP-Large
-    backbone used elsewhere in this paper.
-    """
-
     def __init__(
         self,
         model_name: str = "ViT-L-14",
@@ -77,33 +58,25 @@ class MaskCLIPSaliencyExtractor:
         if self.input_size % self.patch_size != 0:
             self.input_size = (self.input_size // self.patch_size) * self.patch_size
         self.grid = self.input_size // self.patch_size
-        # Resize-only preprocessing (no center crop): saliency square must
-        # align with the full image we're going to crop from.
+        # Keep saliency coordinates aligned with the full image.
         self.transform = T.Compose([
             T.Resize((self.input_size, self.input_size),
                      interpolation=T.InterpolationMode.BICUBIC),
             T.ToTensor(),
             T.Normalize(mean=_OPENAI_MEAN, std=_OPENAI_STD),
         ])
-        # Per-image patch-feature cache (keyed by id(image)) for
-        # query-conditioned reranking, where the same image is hit by
-        # many queries. Per-query text-feature cache reuses the same text
-        # encode across all candidate images for one query. Cleared via
-        # clear_cache().
         self._patch_n_cache: dict[int, torch.Tensor] = {}
         self._text_feat_cache: dict[str, torch.Tensor] = {}
 
     def _project(self, h: torch.Tensor) -> torch.Tensor:
-        """Apply visual.proj whether it's a Linear or a raw Parameter."""
         proj = self.vis.proj
         if proj is None:
             return h
         if isinstance(proj, torch.nn.Linear):
             return proj(h)
-        return h @ proj.to(dtype=h.dtype, device=h.device)  # raw [D, D_emb]
+        return h @ proj.to(dtype=h.dtype, device=h.device)
 
     def _dense_features(self, x: torch.Tensor) -> torch.Tensor:
-        """Return MaskCLIP dense image tokens [B, N+1, D_emb]."""
         v = self.vis
         h = v.conv1(x)
         h = h.reshape(h.shape[0], h.shape[1], -1).permute(0, 2, 1)
@@ -127,15 +100,13 @@ class MaskCLIPSaliencyExtractor:
 
     @torch.no_grad()
     def extract(self, image: Image.Image, target_size: int = 384) -> np.ndarray:
-        """Return saliency [target_size, target_size] in [0, 1]."""
         x = self.transform(image.convert("RGB")).unsqueeze(0).to(self.device)
         h = self._dense_features(x)
-        # h: [1, N+1, D_emb], CLS at 0, patches at 1:.
         cls_feat = h[:, 0, :]
         patch_feat = h[:, 1:, :]
         cls_n = cls_feat / (cls_feat.norm(dim=-1, keepdim=True) + 1e-8)
         patch_n = patch_feat / (patch_feat.norm(dim=-1, keepdim=True) + 1e-8)
-        sim = (cls_n.unsqueeze(1) * patch_n).sum(dim=-1)  # [1, N]
+        sim = (cls_n.unsqueeze(1) * patch_n).sum(dim=-1)
         sim_np = sim[0].detach().cpu().numpy().astype(np.float32)
         sim_map = sim_np.reshape(self.grid, self.grid)
         lo, hi = float(sim_map.min()), float(sim_map.max())
@@ -175,9 +146,6 @@ class MaskCLIPSaliencyExtractor:
     @torch.no_grad()
     def extract_query(self, image: Image.Image, text_query: str,
                       target_size: int = 384) -> np.ndarray:
-        """Query-conditional MaskCLIP saliency: cosine of per-patch
-        features against the text embedding. Per MaskCLIP §3.2 this is
-        the intended use of the dense per-patch features."""
         text_feat = self._get_text_feat(text_query)
 
         patch_n = self._patch_n_for_image(image)
