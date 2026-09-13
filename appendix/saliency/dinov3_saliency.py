@@ -11,8 +11,7 @@ import torch
 from PIL import Image
 from torchvision import transforms as T
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[1]
-_DINOV3_REPO = _PROJECT_ROOT / "third_party" / "dinov3"
+_DINOV3_REPO = Path(__file__).resolve().parent / "third_party" / "dinov3"
 
 _IMAGENET_MEAN = (0.485, 0.456, 0.406)
 _IMAGENET_STD = (0.229, 0.224, 0.225)

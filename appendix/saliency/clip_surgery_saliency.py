@@ -9,8 +9,7 @@ import numpy as np
 import torch
 from PIL import Image
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[1]
-_CLIP_SURGERY_REPO = _PROJECT_ROOT / "third_party" / "CLIP_Surgery"
+_CLIP_SURGERY_REPO = Path(__file__).resolve().parent / "third_party" / "CLIP_Surgery"
 
 
 def _load_clip_surgery(model_name: str = "CS-ViT-L/14",
