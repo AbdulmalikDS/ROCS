@@ -77,6 +77,22 @@ class RetrievalTests(unittest.TestCase):
             self.assertEqual((len(sources), sources[1]), (2, 'second'))
             self.assertEqual(len(load_split('repo', 'coco', limit=1)[1]), 2)
 
+    def test_encoder_preserves_image_rows_and_rejects_varying_crop_counts(self):
+        encoder = Encoder.__new__(Encoder)
+        encoder.device, encoder.image_size = 'cpu', (8, 8)
+        encoder.preprocess = lambda im: torch.tensor(im.getpixel((0, 0)), dtype=torch.float32)
+        encoder.model = SimpleNamespace(encode_image=lambda pixels, normalize: pixels)
+        images = [Image.new('RGB', (8, 8), color) for color in ['red', 'green']]
+        for batch_size in (1, 2):
+            with self.subTest(batch_size=batch_size):
+                global_features, crops = encoder.images(images, batch_size)
+                self.assertEqual(crops.shape, (2, 5, 3))
+                np.testing.assert_array_equal(global_features, [[255, 0, 0], [0, 128, 0]])
+                np.testing.assert_array_equal(crops, np.repeat(global_features[:, None], 5, axis=1))
+                cropper = lambda im: [(0, 0, 4, 4)] * (3 if im.getpixel((0, 0))[0] else 1)
+                with self.assertRaisesRegex(ValueError, 'same number of crops'):
+                    encoder.images(images, batch_size, cropper=cropper)
+
     def test_cli_encodes_all_views_and_reports_metrics(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

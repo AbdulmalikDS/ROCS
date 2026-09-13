@@ -39,19 +39,24 @@ class Encoder:
             raise ValueError("Provide images and a positive batch size.")
         cropper = cropper or (lambda image: fixed5_boxes(*image.size))
         batches = []
+        crop_count = None
         for start in range(0, len(sources), batch_size):
             views = []
             for index in range(start, min(start + batch_size, len(sources))):
                 image = _open(sources[index])
                 views.append(self.preprocess(image))
                 boxes = cropper(image)
+                if crop_count is None:
+                    crop_count = len(boxes)
+                elif len(boxes) != crop_count:
+                    raise ValueError("Every image must have the same number of crops.")
                 for box in boxes:
                     crop = image.crop(box).resize(self.image_size, Image.Resampling.BICUBIC)
                     views.append(self.preprocess(crop))
             pixels = torch.stack(views).to(self.device)
             features = self.model.encode_image(pixels, normalize=True)
             features = features.float().cpu().numpy()
-            batches.append(features.reshape(-1, len(boxes) + 1, features.shape[-1]))
+            batches.append(features.reshape(-1, crop_count + 1, features.shape[-1]))
         features = np.concatenate(batches)
         return features[:, 0], features[:, 1:]
 
