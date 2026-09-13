@@ -8,6 +8,7 @@ itself never uses.
 ## Install
 
 ```bash
+pip install -r requirements-repro.txt
 pip install -r appendix/saliency/requirements.txt
 ```
 
@@ -16,7 +17,9 @@ vendored here:
 
 ```bash
 git clone https://github.com/facebookresearch/dinov3 appendix/saliency/third_party/dinov3
+git -C appendix/saliency/third_party/dinov3 checkout 6876159a11b4df116f30f667f8c9888617df0751
 git clone https://github.com/xmed-lab/CLIP_Surgery appendix/saliency/third_party/CLIP_Surgery
+git -C appendix/saliency/third_party/CLIP_Surgery checkout d4696d47f49cfe70f49140afe5eb94f94c5f59bc
 ```
 
 MaskCLIP needs no clone; it reads dense features from the CLIP checkpoint directly.

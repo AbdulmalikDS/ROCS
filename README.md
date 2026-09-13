@@ -19,10 +19,10 @@ numpy, C++, Rust, Julia, torch and CUDA, and times them.
 
 ## Run
 
-Python 3.10 or newer, with PyTorch for your hardware:
+Python 3.11 is the tested version. Install PyTorch for your hardware, then:
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements-repro.txt
 python evaluate.py --model siglip2 --split coco   # one cell
 ./reproduce.sh                                    # every backbone, both splits
 ```
