@@ -9,7 +9,7 @@
 
 ![MINER on a ROCS query](assets/teaser.jpg)
 
-MINER improves text-to-image retrieval with a frozen encoder. It encodes the full image and five square crops, blends their scores, and applies CSLS to reduce hubness.
+MINER improves text-to-image retrieval with a frozen encoder. It encodes the full image and five crops that preserve its aspect ratio, blends their scores, and applies CSLS to reduce hubness.
 
 ROCS is the benchmark it is evaluated on: cluttered COCO and Flickr30K scenes re-captioned so each query names one small, rare object.
 
@@ -37,7 +37,7 @@ and R@10 for global retrieval, global retrieval with CSLS, and MINER.
 | `--alpha` | `0.4` | weight on the best crop |
 | `--k` | `10` | CSLS neighbours; `0` disables it |
 | `--crops` | `fixed` | `grid` or `random`, the Table 1 comparison |
-| `--crop-ratio` | `0.6` | crop side as a fraction of the shorter edge |
+| `--crop-ratio` | `0.6` | fixed crop width and height as fractions of image width and height |
 | `--n-regions` | `5` | crops per image |
 | `--limit` | | first N images, for a quick check |
 
