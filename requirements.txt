@@ -4,3 +4,4 @@ open_clip_torch>=3.0
 numpy>=1.24
 Pillow>=9.0
 datasets>=2.14
+transformers[sentencepiece]>=4.57,<5
